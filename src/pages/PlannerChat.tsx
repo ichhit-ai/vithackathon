@@ -232,6 +232,7 @@ export function PlannerChat({ onPlanSelected, onLaunchWorkspace, onViewSlides }:
         const timestampedPlans: ProjectPlan[] = (res.plans || []).map((p: any, i: number) => ({
           ...p,
           id: `plan-${p.tier}-${Date.now()}-${i}`,
+          scopeCritique: p.scopeCritique || [],
           milestones: p.milestones.map((m: any) => ({ ...m, hint2: m.hint2 || '' }))
         }));
 

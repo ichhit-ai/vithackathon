@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import type { CritiqueCard, WarRoomLog } from '../types';
 
 export function getApiKey(): string | null {
   const envKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -18,7 +19,6 @@ function getClient(): GoogleGenAI {
   return new GoogleGenAI({ apiKey: key });
 }
 
-// Model IDs from Google AI Studio Dashboard (Gemini 3.1 Flash Lite primary)
 const MODEL_PRIORITY = [
   'gemini-3.1-flash-lite',
   'gemini-2.5-flash-lite',
@@ -28,7 +28,6 @@ const MODEL_PRIORITY = [
   'gemini-2.0-flash'
 ];
 
-// Helper: Format HTML/JS/CSS code with clean line breaks
 function prettyFormatCode(code: string): string {
   if (!code) return '';
   if (code.includes('<!DOCTYPE') || code.includes('<html')) {
@@ -65,15 +64,12 @@ export async function processPlannerMessage(
     };
   }
 
-  onStatusUpdate?.('Architecting project tiers & milestones...');
+  onStatusUpdate?.('Convening AI Council: Architect + Scope Slasher + Pitch Coach...');
   const plans = await generateProjectPlans(userText, onStatusUpdate);
-  return {
-    isProjectPlan: true,
-    plans
-  };
+  return { isProjectPlan: true, plans };
 }
 
-// ─── Plan Schema ─────────────────────────────────────────────────────────────
+// ─── Plan Schema with Scope Critique ─────────────────────────────────────────
 
 const PLAN_SCHEMA = {
   type: 'object',
@@ -88,6 +84,18 @@ const PLAN_SCHEMA = {
           summary:          { type: 'string' },
           estimatedHours:   { type: 'number' },
           techStack:        { type: 'array', items: { type: 'string' } },
+          scopeCritique: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                bucket:    { type: 'string', enum: ['keep', 'cut', 'pivot'] },
+                title:     { type: 'string' },
+                rationale: { type: 'string' }
+              },
+              required: ['bucket', 'title', 'rationale']
+            }
+          },
           milestones: {
             type: 'array',
             items: {
@@ -125,13 +133,16 @@ const PLAN_SCHEMA = {
 export async function generateProjectPlans(idea: string, onStatusUpdate?: (status: string) => void): Promise<any[]> {
   const ai = getClient();
 
-  const prompt = `You are a Lead Software Architect. Generate 3 project tiers (lean: 3 checkpoints, standard: 4 checkpoints, ambitious: 5 checkpoints) for: "${idea}".
+  const prompt = `You are a Lead Software Architect working with a Scope Slasher mentor. Generate 3 project tiers (lean: 3 checkpoints, standard: 4 checkpoints, ambitious: 5 checkpoints) for: "${idea}".
 
-CRITICAL FORMATTING REQUIREMENT FOR CODE:
-- Always format 'starterCode' and 'referenceSolution' with PROPER LINE BREAKS (\\n). NEVER squish HTML, CSS, JS, or Python code into a single line.
-- Provide clean, beautifully indented code blocks with clear // TODO: or <!-- TODO: --> comments.`;
+CRITICAL REQUIREMENTS:
+1. Include a 'scopeCritique' array of 4-6 items categorizing features:
+   - 'keep': Must-have features essential for a working demo
+   - 'cut': Bloat to drop immediately (Auth, Settings, complex DBs)
+   - 'pivot': Clever shortcuts (e.g. mock data instead of scraper)
+2. Format 'starterCode' and 'referenceSolution' with PROPER LINE BREAKS (\\n).`;
 
-  onStatusUpdate?.('Calling Gemini 3.1 Flash Lite API...');
+  onStatusUpdate?.('Calling Gemini Flash Lite API...');
 
   let responseText = '';
   let lastErr = null;
@@ -148,32 +159,37 @@ CRITICAL FORMATTING REQUIREMENT FOR CODE:
         }
       });
       responseText = res.text || '';
-      if (responseText) {
-        console.log(`Successfully generated plans using model: ${modelName}`);
-        break;
-      }
+      if (responseText) break;
     } catch (err: any) {
       lastErr = err;
-      console.warn(`Model ${modelName} failed, trying next fallback...`, err);
+      console.warn(`Model ${modelName} failed, trying fallback...`, err);
     }
   }
 
   if (!responseText) {
-    throw new Error(lastErr?.message || 'Rate limit reached across Gemini models. Please wait a moment and try again.');
+    throw new Error(lastErr?.message || 'Rate limit reached. Please wait and try again.');
   }
 
-  onStatusUpdate?.('Parsing & formatting code blocks...');
+  onStatusUpdate?.('Parsing scope critiques & code blocks...');
 
   let data: any = { plans: [] };
   try {
     data = JSON.parse(responseText);
   } catch (err) {
     console.error('JSON parse error:', err, responseText);
-    throw new Error('Failed to parse Gemini response. Please try clicking send again.');
+    throw new Error('Failed to parse Gemini response. Please try again.');
   }
 
-  const formattedPlans = (data.plans || []).map((p: any) => ({
+  const formattedPlans = (data.plans || []).map((p: any, pIdx: number) => ({
     ...p,
+    scopeCritique: (p.scopeCritique && p.scopeCritique.length > 0
+      ? p.scopeCritique
+      : [
+          { bucket: 'keep', title: 'Core UI & Interactive Logic', rationale: 'Essential for a functional demo.' },
+          { bucket: 'cut', title: 'User Authentication', rationale: 'Takes 2+ hours and adds zero demo value.' },
+          { bucket: 'pivot', title: 'Use Hardcoded Seed Data', rationale: 'Skip complex API integrations for now.' },
+        ]
+    ).map((c: any, i: number) => ({ ...c, id: `sc-${pIdx}-${i}` })),
     milestones: (p.milestones || []).map((m: any) => ({
       ...m,
       starterCode: prettyFormatCode(m.starterCode),
@@ -181,11 +197,29 @@ CRITICAL FORMATTING REQUIREMENT FOR CODE:
     }))
   }));
 
-  onStatusUpdate?.('Plans ready!');
+  onStatusUpdate?.('Council plans ready!');
   return formattedPlans;
 }
 
-// ─── Senior Staff Engineer Coach System Prompt ────────────────────────────────
+// ─── War Room Log Generator ──────────────────────────────────────────────────
+
+export function generateWarRoomLogs(projectTitle: string, scopeCritique?: CritiqueCard[]): WarRoomLog[] {
+  const ts = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const keeps = (scopeCritique || []).filter(c => c.bucket === 'keep').map(c => c.title);
+  const cuts = (scopeCritique || []).filter(c => c.bucket === 'cut').map(c => c.title);
+  const pivots = (scopeCritique || []).filter(c => c.bucket === 'pivot').map(c => c.title);
+
+  return [
+    { id: 'w1', agent: 'architect', timestamp: ts(), message: `Analyzing complexity for "${projectTitle}". Target window: 2-3 hours with progressive checkpoint unlocks.` },
+    { id: 'w2', agent: 'slasher', timestamp: ts(), message: `SCOPE SLASH: Cutting ${cuts.length > 0 ? cuts.join(', ') : 'auth, settings, complex DB'} — zero demo value, high time cost.` },
+    { id: 'w3', agent: 'slasher', timestamp: ts(), message: `KEEP LIST locked: ${keeps.length > 0 ? keeps.join(', ') : 'Core UI, Interactive Logic'} — essential for judges.` },
+    { id: 'w4', agent: 'pitch', timestamp: ts(), message: `Pitch arc framed: Hook → Architecture → Live Demo → Tech Stack → Closing Ask. 3 minutes total.` },
+    { id: 'w5', agent: 'architect', timestamp: ts(), message: `Smart pivots approved: ${pivots.length > 0 ? pivots.join(', ') : 'Hardcoded seed data instead of live API'}. Saves ~1 hour.` },
+    { id: 'w6', agent: 'coach', timestamp: ts(), message: `Roadmap locked. Launching Socratic pair-programming workspace with progressive file unlocking.` },
+  ];
+}
+
+// ─── Senior Staff Engineer Coach ──────────────────────────────────────────────
 
 export async function streamCoachResponse(
   messages: { role: 'user' | 'model'; text: string }[],
@@ -220,36 +254,22 @@ RULES:
 3. Direct, clear, structural guidance.`;
 
   const MAX_WINDOW = 10;
-  const recentMessages = messages.length > MAX_WINDOW 
-    ? messages.slice(-MAX_WINDOW) 
-    : messages;
-
-  const history = recentMessages.slice(0, -1).map(m => ({
-    role: m.role,
-    parts: [{ text: m.text }]
-  }));
-
+  const recentMessages = messages.length > MAX_WINDOW ? messages.slice(-MAX_WINDOW) : messages;
+  const history = recentMessages.slice(0, -1).map(m => ({ role: m.role, parts: [{ text: m.text }] }));
   const lastMessage = recentMessages[recentMessages.length - 1];
 
   let stream = null;
   for (const modelName of MODEL_PRIORITY) {
     try {
-      const chat = ai.chats.create({
-        model: modelName,
-        config: { systemInstruction, temperature: 0.4 },
-        history
-      });
+      const chat = ai.chats.create({ model: modelName, config: { systemInstruction, temperature: 0.4 }, history });
       stream = await chat.sendMessageStream({ message: lastMessage.text });
-      if (stream) {
-        console.log(`Streaming coach response using model: ${modelName}`);
-        break;
-      }
+      if (stream) break;
     } catch (e) {
       console.warn(`Stream failed on model ${modelName}, trying fallback...`);
     }
   }
 
-  if (!stream) throw new Error('All models currently rate-limited. Please retry in a few seconds.');
+  if (!stream) throw new Error('All models rate-limited. Please retry.');
 
   for await (const chunk of stream) {
     const text = chunk.text;
@@ -257,16 +277,11 @@ RULES:
   }
 }
 
-// ─── AI Code Reviewer ───────────────────────────────────────────────────
+// ─── AI Code Reviewer ────────────────────────────────────────────────────────
 
 export async function reviewImplementationWithAI(
   code: string,
-  milestone: {
-    name: string;
-    conceptTaught: string;
-    actionableGoal: string;
-    referenceSolution: string;
-  }
+  milestone: { name: string; conceptTaught: string; actionableGoal: string; referenceSolution: string; }
 ): Promise<{ passed: boolean; score: number; feedback: string; correctedCode?: string }> {
   const ai = getClient();
 
@@ -282,7 +297,7 @@ ${code.slice(0, 2000)}
 Rules:
 1. Evaluate flexibly: Does the code reasonably fulfill the goal?
 2. If passed, give brief 1-sentence praise.
-3. If failed, explain what's missing in 1 short sentence and provide correctedCode formatted with proper line breaks.
+3. If failed, explain what's missing in 1 short sentence and provide correctedCode.
 
 Respond JSON matching schema.`;
 
@@ -298,10 +313,8 @@ Respond JSON matching schema.`;
           responseSchema: {
             type: 'object',
             properties: {
-              passed:        { type: 'boolean' },
-              score:         { type: 'number' },
-              feedback:      { type: 'string' },
-              correctedCode: { type: 'string' }
+              passed: { type: 'boolean' }, score: { type: 'number' },
+              feedback: { type: 'string' }, correctedCode: { type: 'string' }
             },
             required: ['passed', 'score', 'feedback']
           }
@@ -314,13 +327,9 @@ Respond JSON matching schema.`;
     }
   }
 
-  const raw = responseText || '{}';
   let res: any = {};
-  try {
-    res = JSON.parse(raw);
-  } catch (e) {
-    res = { passed: true, score: 90, feedback: "Implementation looks good!" };
-  }
+  try { res = JSON.parse(responseText || '{}'); }
+  catch (e) { res = { passed: true, score: 90, feedback: "Implementation looks good!" }; }
 
   return {
     passed: res.passed ?? true,

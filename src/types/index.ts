@@ -18,6 +18,43 @@ export interface GeminiMilestone {
   referenceSolution: string;
 }
 
+// ─── Cairn Integration Types ─────────────────────────────────────────────────
+
+export type CritiqueBucket = 'keep' | 'cut' | 'pivot';
+
+export interface CritiqueCard {
+  id: string;
+  bucket: CritiqueBucket;
+  title: string;
+  rationale: string;
+}
+
+export type WarRoomAgent = 'architect' | 'slasher' | 'pitch' | 'coach';
+
+export interface WarRoomLog {
+  id: string;
+  agent: WarRoomAgent;
+  timestamp: string;
+  message: string;
+}
+
+export interface PitchSlideBeat {
+  slideNumber: number;
+  name: string;
+  minutes: number;
+  talkingPoints: string[];
+}
+
+export interface CheckInFeedEntry {
+  id: string;
+  kind: 'update' | 'alert';
+  author: string;
+  timestamp: string;
+  body: string;
+}
+
+// ─── Core Plan & Chat Types ──────────────────────────────────────────────────
+
 export interface ProjectPlan {
   id: string;
   tier: PlanTier;
@@ -26,6 +63,8 @@ export interface ProjectPlan {
   estimatedHours: number;
   techStack: string[];
   milestones: GeminiMilestone[];
+  scopeCritique?: CritiqueCard[];
+  pitchOutline?: PitchSlideBeat[];
 }
 
 export interface ChatMessage {

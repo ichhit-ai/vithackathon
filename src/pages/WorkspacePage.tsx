@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import type { ProjectPlan, ChatMessage, GeminiMilestone } from '../types';
-import { streamCoachResponse, reviewImplementationWithAI } from '../services/geminiService';
+import type { ProjectPlan, ChatMessage, GeminiMilestone, WarRoomLog } from '../types';
+import { streamCoachResponse, reviewImplementationWithAI, generateWarRoomLogs } from '../services/geminiService';
 import { MonacoCodeEditor } from '../components/workspace/MonacoEditor';
 import { ClayRoadmapPath } from '../components/workspace/ClayRoadmapPath';
+import { ReadinessGauge } from '../components/cairn/ReadinessGauge';
+import { WarRoomDrawer } from '../components/cairn/WarRoomDrawer';
+import { ScopeCritiqueCards } from '../components/cairn/ScopeCritiqueCards';
 import { CheckCircle, ChevronRight, ChevronDown, ChevronUp, Send, Loader, ShieldAlert, X, Save, Wand2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -386,6 +389,12 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
   const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [savedBadge, setSavedBadge] = useState(false);
+  const [watcherActive, setWatcherActive] = useState(false);
+  const [showScopeCritique, setShowScopeCritique] = useState(false);
+  const watcherTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Generate war room logs from plan
+  const warRoomLogs: WarRoomLog[] = generateWarRoomLogs(plan.title, plan.scopeCritique);
 
   // Auto-fill starter code if file is empty
   useEffect(() => {
@@ -409,6 +418,11 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
     setFileContents(prev => ({ ...prev, [activeFile]: val }));
     setSavedBadge(true);
     setTimeout(() => setSavedBadge(false), 1200);
+
+    // Watchdog: track save activity
+    setWatcherActive(true);
+    if (watcherTimeoutRef.current) clearTimeout(watcherTimeoutRef.current);
+    watcherTimeoutRef.current = setTimeout(() => setWatcherActive(false), 30000);
   };
 
   const handleReviewCode = async () => {
@@ -476,9 +490,23 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
               <Save size={11} /> Auto-Saved
             </span>
           )}
+          <ReadinessGauge
+            completedCount={completedCpIndices.length}
+            totalCount={plan.milestones.length}
+            watcherActive={watcherActive}
+          />
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
+          {plan.scopeCritique && plan.scopeCritique.length > 0 && (
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 10, padding: '5px 10px', gap: 4 }}
+              onClick={() => setShowScopeCritique(s => !s)}
+            >
+              ⚔️ Scope
+            </button>
+          )}
           <button
             className="btn btn-primary"
             style={{ fontSize: 11, padding: '6px 14px' }}
@@ -507,6 +535,10 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
         completedCpIndices={completedCpIndices}
         onSelectCheckpoint={selectCheckpoint}
       />
+
+      {showScopeCritique && plan.scopeCritique && plan.scopeCritique.length > 0 && (
+        <ScopeCritiqueCards cards={plan.scopeCritique} />
+      )}
 
       {milestone && <TeachBar milestone={milestone} />}
 
@@ -561,6 +593,9 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
           onApplyFix={applyAIFix}
         />
       )}
+
+      {/* War Room Bottom Drawer */}
+      <WarRoomDrawer logs={warRoomLogs} />
     </div>
   );
 }
