@@ -432,7 +432,12 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
   const handleReviewCode = async () => {
     if (!milestone || reviewing) return;
     setReviewing(true);
-    setTerminalOutput(prev => prev + `\n$ reviewing implementation for ${milestone.name}...\n`);
+
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setWatcherActive(true);
+    setLastHeartbeatTime(nowStr);
+
+    setTerminalOutput(prev => prev + `\n[WATCHDOG DAEMON ${nowStr}] Code submission received for file "${activeFile}"\n[WATCHDOG DAEMON] Running AI Intent & AST Review for CP ${cpIndex + 1}: ${milestone.name}...\n`);
 
     try {
       const res = await reviewImplementationWithAI(
@@ -446,13 +451,21 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
       );
 
       setReviewResult(res);
-      setTerminalOutput(prev => prev + `$ review complete — ${res.passed ? 'PASSED' : 'NEEDS REVISION'} (${res.score}/100)\n  Feedback: ${res.feedback}\n`);
 
-      if (res.passed && !completedCpIndices.includes(cpIndex)) {
-        setCompletedCpIndices(prev => [...prev, cpIndex]);
+      if (res.passed) {
+        const nextCompleted = completedCpIndices.includes(cpIndex) ? completedCpIndices : [...completedCpIndices, cpIndex];
+        const newPct = Math.round((nextCompleted.length / plan.milestones.length) * 100);
+
+        if (!completedCpIndices.includes(cpIndex)) {
+          setCompletedCpIndices(nextCompleted);
+        }
+
+        setTerminalOutput(prev => prev + `[WATCHDOG DAEMON] ✅ PASSED (${res.score}/100) — Recalculated Demo Readiness: ${newPct}%\n  Feedback: ${res.feedback}\n`);
+      } else {
+        setTerminalOutput(prev => prev + `[WATCHDOG DAEMON] ⚠️ NEEDS REVISION (${res.score}/100)\n  Feedback: ${res.feedback}\n`);
       }
     } catch (e: any) {
-      setTerminalOutput(prev => prev + `$ review error: ${e.message}\n`);
+      setTerminalOutput(prev => prev + `[WATCHDOG DAEMON] Error during review: ${e.message}\n`);
     } finally {
       setReviewing(false);
     }
@@ -466,7 +479,12 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
     const newFiles = Array.from(new Set([...unlockedFiles, ...nextMs.filesUnlocked]));
     setUnlockedFiles(newFiles);
     if (nextMs.filesUnlocked[0]) setActiveFile(nextMs.filesUnlocked[0]);
-    setTerminalOutput(prev => prev + `\n$ unlocked checkpoint ${next + 1}: ${nextMs.name}\n`);
+
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setWatcherActive(true);
+    setLastHeartbeatTime(nowStr);
+
+    setTerminalOutput(prev => prev + `\n[WATCHDOG DAEMON ${nowStr}] 🚀 Advanced to Checkpoint ${next + 1}: ${nextMs.name}\n[WATCHDOG DAEMON] Files Unlocked & Monitored: ${nextMs.filesUnlocked.join(', ')}\n`);
   };
 
   const selectCheckpoint = (idx: number) => {
@@ -475,6 +493,12 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
     const newFiles = Array.from(new Set([...unlockedFiles, ...selectedMs.filesUnlocked]));
     setUnlockedFiles(newFiles);
     if (selectedMs.filesUnlocked[0]) setActiveFile(selectedMs.filesUnlocked[0]);
+
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setWatcherActive(true);
+    setLastHeartbeatTime(nowStr);
+
+    setTerminalOutput(prev => prev + `\n[WATCHDOG DAEMON ${nowStr}] Jumped to Checkpoint ${idx + 1}: ${selectedMs.name}\n[WATCHDOG DAEMON] Active Monitored File: ${selectedMs.filesUnlocked[0] || 'code'}\n`);
   };
 
   const applyAIFix = (correctedCode: string) => {
