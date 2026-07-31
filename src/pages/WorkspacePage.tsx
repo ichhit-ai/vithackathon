@@ -390,6 +390,7 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
   const [reviewing, setReviewing] = useState(false);
   const [savedBadge, setSavedBadge] = useState(false);
   const [watcherActive, setWatcherActive] = useState(false);
+  const [lastHeartbeatTime, setLastHeartbeatTime] = useState<string>('');
   const [showScopeCritique, setShowScopeCritique] = useState(false);
   const watcherTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -419,10 +420,13 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
     setSavedBadge(true);
     setTimeout(() => setSavedBadge(false), 1200);
 
-    // Watchdog: track save activity
+    // Watchdog Daemon: track file edit & update heartbeat
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setWatcherActive(true);
+    setLastHeartbeatTime(nowStr);
+
     if (watcherTimeoutRef.current) clearTimeout(watcherTimeoutRef.current);
-    watcherTimeoutRef.current = setTimeout(() => setWatcherActive(false), 30000);
+    watcherTimeoutRef.current = setTimeout(() => setWatcherActive(false), 12000);
   };
 
   const handleReviewCode = async () => {
@@ -494,6 +498,8 @@ export function WorkspacePage({ plan }: WorkspaceProps) {
             completedCount={completedCpIndices.length}
             totalCount={plan.milestones.length}
             watcherActive={watcherActive}
+            activeFile={activeFile}
+            lastHeartbeatTime={lastHeartbeatTime}
           />
         </div>
 

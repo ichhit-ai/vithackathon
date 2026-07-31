@@ -1,10 +1,20 @@
+import { Activity } from 'lucide-react';
+
 interface ReadinessGaugeProps {
   completedCount: number;
   totalCount: number;
   watcherActive: boolean;
+  activeFile?: string;
+  lastHeartbeatTime?: string;
 }
 
-export function ReadinessGauge({ completedCount, totalCount, watcherActive }: ReadinessGaugeProps) {
+export function ReadinessGauge({
+  completedCount,
+  totalCount,
+  watcherActive,
+  activeFile = 'code',
+  lastHeartbeatTime
+}: ReadinessGaugeProps) {
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   
   // SVG arc calculation for semicircular gauge
@@ -18,32 +28,39 @@ export function ReadinessGauge({ completedCount, totalCount, watcherActive }: Re
   else if (pct >= 20) gaugeColor = 'var(--clay-purple)';
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      {/* Watcher Pulse Badge */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 5,
-        background: watcherActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.08)',
-        border: `1px solid ${watcherActive ? 'var(--clay-green)' : 'var(--clay-red)'}`,
-        borderRadius: 'var(--clay-radius-pill)', padding: '3px 10px'
-      }}>
-        <span style={{
-          width: 7, height: 7, borderRadius: '50%',
-          background: watcherActive ? 'var(--clay-green)' : 'var(--clay-red)',
-          animation: watcherActive ? 'pulse 2s infinite' : 'none',
-          flexShrink: 0
-        }} />
-        <span style={{
-          fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
-          color: watcherActive ? 'var(--clay-green)' : 'var(--clay-red)'
-        }}>
-          {watcherActive ? 'ACTIVE' : 'IDLE'}
-        </span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Watcher Daemon Status Badge */}
+      <div
+        title={watcherActive ? `Watchdog Daemon actively monitoring ${activeFile}` : 'Watchdog Daemon waiting for file edits'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: watcherActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.08)',
+          border: `1px solid ${watcherActive ? 'var(--clay-green)' : 'var(--clay-amber)'}`,
+          borderRadius: 'var(--clay-radius-pill)', padding: '4px 12px',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        <Activity
+          size={12}
+          color={watcherActive ? 'var(--clay-green)' : 'var(--clay-amber)'}
+          style={{ animation: watcherActive ? 'pulse 1.2s infinite' : 'none' }}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{
+            fontSize: 9, fontWeight: 800, letterSpacing: '0.05em',
+            color: watcherActive ? 'var(--clay-green)' : 'var(--clay-amber)'
+          }}>
+            WATCHDOG DAEMON
+          </div>
+          <div style={{ fontSize: 9, color: 'var(--clay-text-muted)', fontWeight: 600 }}>
+            {watcherActive ? `SYNCING: ${activeFile}` : lastHeartbeatTime ? `LAST: ${lastHeartbeatTime}` : 'IDLE'}
+          </div>
+        </div>
       </div>
 
-      {/* SVG Semicircular Gauge */}
-      <div style={{ position: 'relative', width: 64, height: 36 }}>
+      {/* SVG Semicircular Readiness Gauge */}
+      <div style={{ position: 'relative', width: 64, height: 36 }} title="Demo Readiness Completion Score">
         <svg width="64" height="36" viewBox="0 0 64 36">
-          {/* Background arc */}
           <path
             d="M 4 32 A 28 28 0 0 1 60 32"
             fill="none"
@@ -51,7 +68,6 @@ export function ReadinessGauge({ completedCount, totalCount, watcherActive }: Re
             strokeWidth="5"
             strokeLinecap="round"
           />
-          {/* Progress arc */}
           <path
             d="M 4 32 A 28 28 0 0 1 60 32"
             fill="none"
@@ -76,7 +92,7 @@ export function ReadinessGauge({ completedCount, totalCount, watcherActive }: Re
           Demo Ready
         </span>
         <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--clay-text)' }}>
-          {completedCount}/{totalCount}
+          {completedCount}/{totalCount} CP
         </span>
       </div>
     </div>
