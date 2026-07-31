@@ -1,0 +1,39 @@
+# Python
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database & Runtime Data
+backend/cairn.db
+backend/cairn.db-wal
+backend/cairn.db-shm
+*.db
+*.db-wal
+*.db-shm
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/.output/
+frontend/.nitro/
+frontend/.wrangler/
+frontend/dist/
+frontend/.tanstack/
+.env
+.env.local
+.env.*.local
+
+# System / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
