@@ -1,6 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
 
 export function getApiKey(): string | null {
+  const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (envKey && envKey.trim().length > 0) {
+    return envKey.trim();
+  }
   return localStorage.getItem('devcoach_gemini_key');
 }
 
