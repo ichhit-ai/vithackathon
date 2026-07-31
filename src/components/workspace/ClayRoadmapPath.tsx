@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { GeminiMilestone } from '../../types';
-import { CheckCircle2, MapPin, ChevronDown, ChevronUp, Play, Unlock } from 'lucide-react';
+import { CheckCircle2, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ClayRoadmapPathProps {
   milestones: GeminiMilestone[];

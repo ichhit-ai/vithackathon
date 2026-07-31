@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage, ProjectPlan } from '../types';
 import { processPlannerMessage } from '../services/geminiService';
-import { Loader, Send, ChevronRight, Check, Presentation, Sparkles, Cpu } from 'lucide-react';
+import { Loader, Send, ChevronRight, Check, Presentation, Sparkles } from 'lucide-react';
 
 interface PlannerChatProps {
   onPlanSelected: (plan: ProjectPlan) => void;

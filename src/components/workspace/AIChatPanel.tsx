@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { ChatMessage, Milestone } from '../../types';
+import type { ChatMessage, GeminiMilestone as Milestone } from '../../types';
 import { Send, ShieldAlert } from 'lucide-react';
 
 interface AIChatPanelProps {
@@ -29,13 +29,13 @@ export function AIChatPanel({ messages, activeMilestone, activeFilePath, onSendM
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-sidebar)' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--clay-surface)' }}>
       {/* Header */}
-      <div className="panel-header">
+      <div className="panel-hdr">
         <span>Coach</span>
         <span style={{
           fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 10,
-          color: 'var(--text-muted)'
+          color: 'var(--clay-text-muted)'
         }}>
           CP {activeMilestone?.order || 1} · {activeFilePath.split('/').pop()}
         </span>
@@ -43,9 +43,9 @@ export function AIChatPanel({ messages, activeMilestone, activeFilePath, onSendM
 
       {/* Guardrail notice */}
       <div style={{
-        padding: '6px 12px', borderBottom: '1px solid var(--border-subtle)',
+        padding: '6px 12px', borderBottom: '1px solid var(--clay-border)',
         display: 'flex', alignItems: 'center', gap: 6,
-        fontSize: 10, color: 'var(--text-muted)'
+        fontSize: 10, color: 'var(--clay-text-muted)'
       }}>
         <ShieldAlert size={10} />
         <span>Solution guardrail active — won't write checkpoint code</span>
@@ -56,13 +56,13 @@ export function AIChatPanel({ messages, activeMilestone, activeFilePath, onSendM
         {messages.map(msg => (
           <div key={msg.id} style={{
             display: 'flex', flexDirection: 'column',
-            alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+            alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
             gap: 2
           }}>
-            {msg.isGuardrailWarning && (
+            {msg.isGuardrail && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                fontSize: 10, color: 'var(--amber)', marginBottom: 2
+                fontSize: 10, color: 'var(--clay-amber)', marginBottom: 2
               }}>
                 <ShieldAlert size={10} />
                 <span>Guardrail triggered</span>
@@ -71,13 +71,13 @@ export function AIChatPanel({ messages, activeMilestone, activeFilePath, onSendM
             <div style={{
               maxWidth: '86%', padding: '8px 10px', borderRadius: 6,
               fontSize: 12, lineHeight: 1.5,
-              background: msg.sender === 'user' ? 'var(--bg-active)' : 'var(--bg-card)',
-              color: msg.isGuardrailWarning ? 'var(--amber)' : 'var(--text-primary)',
-              border: '1px solid var(--border-subtle)'
+              background: msg.role === 'user' ? 'var(--clay-card)' : 'var(--clay-card-inner)',
+              color: msg.isGuardrail ? 'var(--clay-amber)' : 'var(--clay-text)',
+              border: '1px solid var(--clay-border)'
             }}>
-              {msg.text}
+              {msg.content}
             </div>
-            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{msg.timestamp}</span>
+            <span style={{ fontSize: 10, color: 'var(--clay-text-muted)' }}>{msg.timestamp}</span>
           </div>
         ))}
         <div ref={endRef} />
@@ -85,7 +85,7 @@ export function AIChatPanel({ messages, activeMilestone, activeFilePath, onSendM
 
       {/* Quick prompts */}
       <div style={{
-        padding: '6px 10px', borderTop: '1px solid var(--border-subtle)',
+        padding: '6px 10px', borderTop: '1px solid var(--clay-border)',
         display: 'flex', gap: 4, flexWrap: 'wrap'
       }}>
         {quickPrompts.map(p => (
@@ -105,7 +105,7 @@ export function AIChatPanel({ messages, activeMilestone, activeFilePath, onSendM
         onSubmit={submit}
         style={{
           display: 'flex', gap: 6, padding: '8px 10px',
-          borderTop: '1px solid var(--border-subtle)', flexShrink: 0
+          borderTop: '1px solid var(--clay-border)', flexShrink: 0
         }}
       >
         <input
