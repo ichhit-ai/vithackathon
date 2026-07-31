@@ -31,7 +31,7 @@ export function ClayRoadmapPath({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         cursor: 'pointer'
       }} onClick={() => setIsExpanded(!isExpanded)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -128,7 +128,7 @@ export function ClayRoadmapPath({
                     background: badgeGradient,
                     display: 'flex',
                     alignItems: 'center',
-                    justify: 'center',
+                    justifyContent: 'center',
                     color: '#fff',
                     fontWeight: 800,
                     fontSize: 11,

@@ -65,7 +65,7 @@ export function PlanCard({ plan, isSelected, onSelect, onEdit }: PlanCardProps) 
             Checkpoints ({plan.milestones.length})
           </span>
           {plan.milestones.slice(0, 4).map((m, idx) => (
-            <div key={m.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-zinc-950/60 border border-zinc-800/40">
+            <div key={m.order} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-zinc-950/60 border border-zinc-800/40">
               <span className="text-zinc-300 font-medium truncate max-w-[200px]">
                 {idx + 1}. {m.name}
               </span>

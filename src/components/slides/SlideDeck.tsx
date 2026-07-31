@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ProjectPlan } from '../../types';
 import { exportPlanToPowerPoint } from '../../services/pptxExporter';
-import { ChevronLeft, ChevronRight, Download, Terminal, Sparkles, HelpCircle, CheckCircle2, AlertTriangle, Code2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Terminal, Sparkles } from 'lucide-react';
 
 interface SlideDeckProps {
   plan: ProjectPlan;
